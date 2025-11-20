@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-src *;">
+  <title>Thore</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button id="add-feed" class="floating-add" title="Add new live crop">+</button>
+    </header>
+
+    <section id="feed-grid" class="feed-grid"></section>
+  </div>
+
+  <div id="cropper-modal" class="modal hidden">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Crop editor</p>
+          <h3 id="modal-title">Adjust crop</h3>
+        </div>
+        <div class="spacer"></div>
+        <button id="close-modal" class="ghost">Cancel</button>
+        <button id="save-crop" class="primary">Save crop</button>
+      </div>
+      <div class="modal-body">
+        <div class="canvas-wrapper">
+          <div id="cropper-canvas" class="cropper-canvas">
+            <webview id="cropper-webview" allowpopups partition="persist:cropper"></webview>
+            <div id="selection" class="selection">
+              <div class="handle handle-nw" data-dir="nw"></div>
+              <div class="handle handle-ne" data-dir="ne"></div>
+              <div class="handle handle-sw" data-dir="sw"></div>
+              <div class="handle handle-se" data-dir="se"></div>
+              <div class="handle handle-n" data-dir="n"></div>
+              <div class="handle handle-s" data-dir="s"></div>
+              <div class="handle handle-e" data-dir="e"></div>
+              <div class="handle handle-w" data-dir="w"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-fields">
+            <label class="field narrow">
+              <span>Viewport width</span>
+              <input id="modal-view-width" type="number" min="640" max="3840" />
+            </label>
+            <label class="field narrow">
+              <span>Viewport height</span>
+              <input id="modal-view-height" type="number" min="480" max="2400" />
+            </label>
+            <label class="field narrow">
+              <span>Zoom</span>
+              <input id="modal-zoom" type="number" min="0.5" max="2" step="0.05" />
+            </label>
+          </div>
+          <p class="smallprint">Drag the rectangle or its handles. The webview stays live while cropping.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="add-modal" class="modal hidden">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Add page</p>
+          <h3>Add a live crop</h3>
+        </div>
+        <div class="spacer"></div>
+        <button id="add-cancel" class="ghost">Cancel</button>
+        <button id="add-save" class="primary">Add</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-footer" style="justify-content:flex-start; gap:12px;">
+          <label class="field" style="flex:1; min-width: 280px;">
+            <span>Page URL</span>
+            <input id="add-url-input" type="url" placeholder="https://example.com" required />
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "name": "thore",
+  "version": "0.1.0",
+  "description": "Thore: Windows 11 Electron app for live, cropped views of multiple web pages.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dist:win": "set CSC_IDENTITY_AUTO_DISCOVERY=false&&set WIN_CSC_LINK=&&set WIN_CSC_KEY_PASSWORD=&& electron-builder build --win --x64",
+    "dist:win-arm": "set CSC_IDENTITY_AUTO_DISCOVERY=false&&set WIN_CSC_LINK=&&set WIN_CSC_KEY_PASSWORD=&& electron-builder build --win --arm64",
+    "dist:linux": "electron-builder build --linux AppImage --x64",
+    "dist:mac": "electron-builder build --mac zip --x64"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.example.thore",
+    "productName": "Thore",
+    "directories": {
+      "output": "dist"
+    },
+    "artifactName": "thore-${version}-${arch}.${ext}",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "mac": {
+      "target": [
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^26.0.12"
+  }
+}
