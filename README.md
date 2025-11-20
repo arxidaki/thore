@@ -25,6 +25,8 @@ npm start
 
 - Windows portable (x64): [Download](https://github.com/arxidaki/thore/releases/download/v0.1.0/thore-0.1.0-x64.exe)
 - Windows portable (ARM64): [Download](https://github.com/arxidaki/thore/releases/download/v0.1.0/thore-0.1.0-arm64.exe)
+- MacOS portable (Apple Silicon): [Download](https://github.com/arxidaki/thore/releases/download/v0.1.0/thore-0.1.0-arm64.zip)
+- MacOS portable (intel): [Download](https://github.com/arxidaki/thore/releases/download/v0.1.0/thore-0.1.0-x64.zip)
 
 ## Building
 
