@@ -30,6 +30,7 @@
   let dragState = null;
   let ctrlActive = false;
   let dragMove = null;
+  let contextMenuTarget = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -455,6 +456,59 @@
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return `https://${trimmed}`;
   }
+
+  // Lightweight context menu for text inputs (enables right-click paste).
+  const ctxMenu = document.createElement('div');
+  ctxMenu.className = 'context-menu';
+  const pasteBtn = document.createElement('button');
+  pasteBtn.type = 'button';
+  pasteBtn.textContent = 'Paste';
+  ctxMenu.appendChild(pasteBtn);
+  document.body.appendChild(ctxMenu);
+
+  function hideContextMenu() {
+    ctxMenu.classList.remove('is-open');
+    contextMenuTarget = null;
+  }
+
+  pasteBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!contextMenuTarget) return hideContextMenu();
+    try {
+      const text = await navigator.clipboard.readText();
+      if (typeof text === 'string') {
+        const el = contextMenuTarget;
+        const start = el.selectionStart ?? el.value.length;
+        const end = el.selectionEnd ?? el.value.length;
+        const prefix = el.value.slice(0, start);
+        const suffix = el.value.slice(end);
+        el.value = prefix + text + suffix;
+        const caret = start + text.length;
+        el.setSelectionRange(caret, caret);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    } catch (_err) {
+      // Clipboard read failed; ignore.
+    } finally {
+      hideContextMenu();
+    }
+  });
+
+  window.addEventListener('click', hideContextMenu);
+
+  window.addEventListener('contextmenu', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) {
+      hideContextMenu();
+      return;
+    }
+    event.preventDefault();
+    contextMenuTarget = target;
+    const { clientX, clientY } = event;
+    ctxMenu.style.left = `${clientX}px`;
+    ctxMenu.style.top = `${clientY}px`;
+    ctxMenu.classList.add('is-open');
+  });
 
   selectionEl.addEventListener('pointerdown', (event) => {
     const handle = event.target.closest('.handle');
