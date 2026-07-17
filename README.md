@@ -6,6 +6,15 @@ The default region is Cyprus; point it anywhere with one constant.
 
 ![Thore dashboard](docs/screenshot.png)
 
+## Download
+
+Prebuilt Windows binaries are on the [releases page](https://github.com/arxidaki/thore/releases/latest):
+
+- `thore-vX.Y.Z-windows-x64-portable.exe` — portable, just run it
+- `Thore_X.Y.Z_x64-setup.exe` — installer
+
+Both need the WebView2 runtime, which is preinstalled on Windows 10/11. Releases are built automatically by [GitHub Actions](.github/workflows/release.yml) — tagging a commit `vX.Y.Z` and pushing the tag cuts a new one.
+
 ## Features
 
 - **Live waveforms** via the CAPS WebSocket stream (the same channel Raspberry Shake's own StationView uses), with automatic fallback to FDSN `dataselect` polling if the stream drops.
