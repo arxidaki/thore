@@ -1,55 +1,18 @@
 {
   "name": "thore",
-  "version": "0.1.0",
-  "description": "Thore: Windows 11 Electron app for live, cropped views of multiple web pages.",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "dev": "electron .",
-    "dist:win": "set CSC_IDENTITY_AUTO_DISCOVERY=false&&set WIN_CSC_LINK=&&set WIN_CSC_KEY_PASSWORD=&& electron-builder build --win --x64",
-    "dist:win-arm": "set CSC_IDENTITY_AUTO_DISCOVERY=false&&set WIN_CSC_LINK=&&set WIN_CSC_KEY_PASSWORD=&& electron-builder build --win --arm64",
-    "dist:linux": "electron-builder build --linux AppImage --x64",
-    "dist:mac": "electron-builder build --mac zip --x64"
+  "version": "0.2.0",
+  "description": "Live seismic dashboard for the Raspberry Shake network — waveforms, spectrograms and ground-motion peaks for every public station in a region, streamed with seconds of latency into a tiny Tauri desktop app.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arxidaki/thore.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "build": {
-    "appId": "com.example.thore",
-    "productName": "Thore",
-    "directories": {
-      "output": "dist"
-    },
-    "artifactName": "thore-${version}-${arch}.${ext}",
-    "files": [
-      "main.js",
-      "preload.js",
-      "renderer/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        "portable"
-      ],
-      "signAndEditExecutable": false,
-      "verifyUpdateCodeSignature": false
-    },
-    "mac": {
-      "target": [
-        "zip"
-      ],
-      "category": "public.app-category.productivity"
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ],
-      "category": "Utility"
-    }
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
   },
   "devDependencies": {
-    "electron": "^32.3.3",
-    "electron-builder": "^26.0.12"
+    "@tauri-apps/cli": "^2.11.4"
   }
 }

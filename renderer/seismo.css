@@ -1,0 +1,313 @@
+/* Palette follows StationView: deep navy panels, blue borders, cyan/teal accents. */
+:root {
+  --bg: #081527;
+  --panel: #0c1f38;
+  --panel-strong: #0a1a2f;
+  --text: #dbeafe;
+  --subtle: #8fb3d9;
+  --accent: #3ce6c8;
+  --accent-strong: #45d7e8;
+  --border: #1c4a7c;
+  --danger: #ff6b6b;
+  --warn: #ffc857;
+  --success: #7ef3a4;
+  --strip-bg: #010409;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 18% 12%, rgba(69, 215, 232, 0.05), transparent 38%),
+    radial-gradient(circle at 82% 0%, rgba(60, 130, 235, 0.08), transparent 35%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html,
+body {
+  overflow: hidden; /* the layout engine guarantees fit; no scrollbar feedback */
+}
+
+html.allow-scroll,
+html.allow-scroll body {
+  overflow-y: auto; /* only below the readability floor */
+}
+
+.shell {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 6px;
+}
+
+/* --- status chip overlaid on the map (replaces the old header) --- */
+
+.map-status {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(9, 21, 38, 0.88);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.status-line {
+  color: var(--subtle);
+}
+
+.status-line.bad {
+  color: var(--danger);
+}
+
+/* --- grid & cards --- */
+
+/* Masonry-style packing: CSS columns fill vertically, so short cards
+   (e.g. "awaiting data") never punch holes. The column count is set by the
+   layout engine in seismo.js, which also picks the zoom deterministically. */
+.dash-grid {
+  column-gap: 6px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  break-inside: avoid;
+  margin: 0 0 6px;
+}
+
+.card.flash {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Leader lines from map hexagons to their cards (drawn by updateLinkLines). */
+.link-lines {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.card.hl {
+  outline: 1.5px solid var(--sta-accent, var(--accent));
+  outline-offset: 0;
+}
+
+.card.is-stale {
+  opacity: 0.72;
+}
+
+/* Dead sensors (liveness sweep): card leaves the layout, marker stays ghosted. */
+.card.hidden-card {
+  display: none;
+}
+
+/* --- map card --- */
+
+/* Fixed aspect ratio: the map scales uniformly on resize instead of stretching. */
+.map-wrap {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--strip-bg);
+  aspect-ratio: 3 / 2;
+}
+
+#map-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* --- station tiles --- */
+
+.strip {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--strip-bg);
+}
+
+/* Strip height is set by the layout engine: 58px minimum, stretched to
+   absorb leftover vertical space in tall windows. */
+canvas.wave,
+canvas.spec {
+  display: block;
+  width: 100%;
+  height: var(--strip-h, 58px);
+}
+
+.crosshair {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(158, 252, 255, 0.35);
+  pointer-events: none;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+  min-width: 0;
+}
+
+.sta-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sta-code {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Regular pointy-top hexagon: height ≈ width × 1.155 or it looks stretched. */
+.type-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 18px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  color: #0b0e14;
+  font-weight: 700;
+  font-size: 7.5px;
+}
+
+.tile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--subtle);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--subtle);
+}
+
+.status-dot.good {
+  background: var(--success);
+}
+
+.status-dot.warn {
+  background: var(--warn);
+}
+
+.status-dot.bad {
+  background: var(--danger);
+}
+
+.gm-row2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 1px;
+  min-width: 0;
+}
+
+.gm-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gm-key {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--subtle);
+}
+
+.gm-num {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.gm-unit {
+  font-size: 9px;
+  color: var(--subtle);
+}
+
+.gm-note {
+  color: var(--warn);
+  font-size: 9.5px;
+  padding: 0 2px;
+}
+
+.hidden {
+  display: none;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 40;
+  background: rgba(8, 11, 18, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 11px;
+  color: var(--text);
+  pointer-events: none;
+  white-space: nowrap;
+}
