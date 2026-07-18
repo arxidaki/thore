@@ -15,12 +15,10 @@
   }
 
   function tileUrl(z, x, y) {
-    // CARTO voyager with the label layer removed: clean geography, zero text
-    // (retina tiles, drawn at half size for extra sharpness).
-    const sub = SUBDOMAINS[Math.abs(x + y) % SUBDOMAINS.length];
-    // ck param: cache-bust tiles cached before crossOrigin was set (a cached
-    // no-CORS response would taint the canvas and block the recolor pass).
-    return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/${z}/${x}/${y}@2x.png?ck=2`;
+    // Esri World Ocean Base — the same bathymetry-and-hillshade style as the
+    // original StationView map, but its labels live in a separate reference
+    // layer that we simply never fetch (note the z/y/x path order).
+    return `https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/${z}/${y}/${x}`;
   }
 
   function fallbackTileUrl(z, x, y) {
@@ -150,15 +148,18 @@
         const r = d[i];
         const g = d[i + 1];
         const b = d[i + 2];
-        if (b > r + 6 && b > 170 && g > 150) {
-          // Water -> the deep teal of the original map (measured 74,132,146).
-          const t = Math.max(0, Math.min(1, ((r + g + b) / 765 - 0.72) / 0.2));
+        if (b > r + 20 && b > 150) {
+          // Water: Ocean Base encodes depth as luminance; remap the blue ramp
+          // to the original map's teal (measured 74,132,146 family) so the
+          // bathymetric banding survives the recolor.
+          const t = Math.max(0, Math.min(1, ((r + g + b) / 765 - 0.6) / 0.28));
           d[i] = 54 + 34 * t;
           d[i + 1] = 104 + 40 * t;
           d[i + 2] = 118 + 42 * t;
         } else {
-          // Land -> desaturated warm-gray hillshade (measured 146..217 gray).
-          const shade = 0.35 + (0.65 * rd[i]) / 255;
+          // Land: desaturate toward the original's warm gray and deepen the
+          // relief (Ocean Base's own hillshade is subtle).
+          const shade = 0.5 + (0.5 * rd[i]) / 255;
           const gray = (r + g + b) / 3;
           d[i] = Math.min(255, (gray + (r - gray) * 0.45) * shade);
           d[i + 1] = Math.min(255, (gray + (g - gray) * 0.45) * shade);
@@ -178,7 +179,7 @@
     bctx.fillStyle = 'rgba(60, 75, 95, 0.8)';
     bctx.textAlign = 'right';
     bctx.fillStyle = 'rgba(230, 242, 248, 0.78)';
-    bctx.fillText('© OpenStreetMap · © CARTO · © Esri', W - 6 * dpr, H - 6 * dpr);
+    bctx.fillText('© Esri · GEBCO · © OpenStreetMap', W - 6 * dpr, H - 6 * dpr);
 
     const placed = markers.map((m) => {
       const p = project(m.lat, m.lon, zoom);
