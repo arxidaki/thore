@@ -259,6 +259,7 @@
   }
 
   function setStatus(text, cls) {
+    if (!statusLine) return; // status chip removed from the UI
     statusLine.textContent = text;
     statusLine.className = `status-line${cls ? ` ${cls}` : ''}`;
   }
@@ -699,9 +700,11 @@
       }
       if (tile.hidden) hiddenCodes.push(code);
     }
-    statusLine.title = hiddenCodes.length
-      ? `hidden (no data > ${DEAD_AFTER_MS / 60000} min): ${hiddenCodes.join(', ')}`
-      : '';
+    if (statusLine) {
+      statusLine.title = hiddenCodes.length
+        ? `hidden (no data > ${DEAD_AFTER_MS / 60000} min): ${hiddenCodes.join(', ')}`
+        : '';
+    }
     if (changed) {
       positionMapCard();
       measureLayout();
@@ -722,6 +725,7 @@
       stopped: ['bad', 'polling', 'Stream off — FDSN polling only'],
       off: ['bad', 'polling', 'Stream off — FDSN polling only']
     };
+    if (!streamDot || !streamLabel) return; // status chip removed from the UI
     const [cls, label, title] = states[streamState] || states.off;
     streamDot.className = `status-dot ${cls}`;
     streamLabel.textContent = label;

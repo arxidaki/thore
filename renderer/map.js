@@ -222,7 +222,7 @@
         hexPath(ctx, m.px, m.py, r);
         ctx.fillStyle = m.color;
         ctx.fill();
-        ctx.lineWidth = 1.5 * dpr;
+        ctx.lineWidth = 0.55 * dpr;
         ctx.strokeStyle = '#0b0e14';
         ctx.stroke();
         ctx.fillStyle = '#0b0e14';
@@ -237,7 +237,7 @@
           ctx.arc(sx, sy, 3.2 * dpr, 0, 2 * Math.PI);
           ctx.fillStyle = statusColors[status] || statusColors.bad;
           ctx.fill();
-          ctx.lineWidth = 1 * dpr;
+          ctx.lineWidth = 0.6 * dpr;
           ctx.strokeStyle = '#0b0e14';
           ctx.stroke();
         }
