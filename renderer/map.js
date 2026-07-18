@@ -160,10 +160,14 @@
           d[i + 1] = 88 + 57 * t;
           d[i + 2] = 97 + 62 * t;
         } else {
-          // Land: warm tan hillshade ramp measured from the original tiles
-          // (shadows ~(130,126,122), lit flats ~(214,212,209)). Ocean Base's
-          // land colors are ignored entirely — no roads, no river tints.
-          const v = Math.max(70, Math.min(235, 40 + 0.72 * rr));
+          // Land: warm tan hillshade measured from the original tiles.
+          // The relief source packs 90% of land into a narrow light band
+          // (p5=189..p95=239), so stretch it across the original's full
+          // range — shadows (130,126,122) to lit flats (214,212,209) —
+          // or the terrain reads flat. Ocean Base's land colors are
+          // ignored entirely: no roads, no river tints.
+          const rn = Math.max(0, Math.min(1, (rr - 186) / 55));
+          const v = 122 + 102 * rn;
           d[i] = v + 4;
           d[i + 1] = v;
           d[i + 2] = v - 4;
