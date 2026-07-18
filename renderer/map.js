@@ -148,22 +148,25 @@
         const r = d[i];
         const g = d[i + 1];
         const b = d[i + 2];
-        if (b > r + 20 && b > 150) {
-          // Water: Ocean Base encodes depth as luminance; remap the blue ramp
-          // to the original map's teal (measured 74,132,146 family) so the
-          // bathymetric banding survives the recolor.
-          const t = Math.max(0, Math.min(1, ((r + g + b) / 765 - 0.6) / 0.28));
-          d[i] = 54 + 34 * t;
-          d[i + 1] = 104 + 40 * t;
-          d[i + 2] = 118 + 42 * t;
+        const rr = rd[i];
+        const rb = rd[i + 2];
+        // Real sea is blue in BOTH layers; rivers are blue only in Ocean Base
+        // (the relief layer has no rivers), so they render as land and vanish.
+        if (b > r + 20 && b > 150 && rb > rr + 8) {
+          // Depth-to-teal ramp fitted on matched pixels of the original map:
+          // deep (48,88,97) -> shallow (86,145,159), banding preserved.
+          const t = Math.max(0, Math.min(1, ((r + g + b) / 765 - 0.63) / 0.19));
+          d[i] = 48 + 38 * t;
+          d[i + 1] = 88 + 57 * t;
+          d[i + 2] = 97 + 62 * t;
         } else {
-          // Land: desaturate toward the original's warm gray and deepen the
-          // relief (Ocean Base's own hillshade is subtle).
-          const shade = 0.5 + (0.5 * rd[i]) / 255;
-          const gray = (r + g + b) / 3;
-          d[i] = Math.min(255, (gray + (r - gray) * 0.45) * shade);
-          d[i + 1] = Math.min(255, (gray + (g - gray) * 0.45) * shade);
-          d[i + 2] = Math.min(255, (gray + (b - gray) * 0.45) * shade);
+          // Land: warm tan hillshade ramp measured from the original tiles
+          // (shadows ~(130,126,122), lit flats ~(214,212,209)). Ocean Base's
+          // land colors are ignored entirely — no roads, no river tints.
+          const v = Math.max(70, Math.min(235, 40 + 0.72 * rr));
+          d[i] = v + 4;
+          d[i + 1] = v;
+          d[i + 2] = v - 4;
         }
       }
       bctx.putImageData(baseImg, 0, 0);
