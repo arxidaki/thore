@@ -18,17 +18,25 @@
     // CARTO voyager with the label layer removed: clean geography, zero text
     // (retina tiles, drawn at half size for extra sharpness).
     const sub = SUBDOMAINS[Math.abs(x + y) % SUBDOMAINS.length];
-    return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/${z}/${x}/${y}@2x.png`;
+    // ck param: cache-bust tiles cached before crossOrigin was set (a cached
+    // no-CORS response would taint the canvas and block the recolor pass).
+    return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/${z}/${x}/${y}@2x.png?ck=2`;
   }
 
   function fallbackTileUrl(z, x, y) {
     const sub = SUBDOMAINS[Math.abs(x + y) % SUBDOMAINS.length];
-    return `https://${sub}.basemaps.cartocdn.com/light_nolabels/${z}/${x}/${y}.png`;
+    return `https://${sub}.basemaps.cartocdn.com/light_nolabels/${z}/${x}/${y}.png?ck=2`;
+  }
+
+  function reliefTileUrl(z, x, y) {
+    // Label-free hillshade, multiplied over land for the original map's depth.
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/${z}/${y}/${x}`;
   }
 
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      img.crossOrigin = 'anonymous'; // CORS-clean so the canvas stays readable
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error(`tile failed: ${url}`));
       img.src = url;
@@ -96,6 +104,14 @@
     bctx.fillStyle = '#d4dadc';
     bctx.fillRect(0, 0, W, H);
 
+    // Hillshade layer, composited manually in the pixel pass below.
+    const relief = document.createElement('canvas');
+    relief.width = W;
+    relief.height = H;
+    const rctx = relief.getContext('2d');
+    rctx.fillStyle = '#ffffff'; // neutral (no shading) where relief is missing
+    rctx.fillRect(0, 0, W, H);
+
     const x0 = Math.floor(origin.x / tileStep);
     const x1 = Math.floor((origin.x + W) / tileStep);
     const y0 = Math.floor(origin.y / tileStep);
@@ -113,16 +129,56 @@
             .catch(() => {
               bctx.fillStyle = '#cfd6da';
               bctx.fillRect(px, py, tileStep + 0.5, tileStep + 0.5);
-            })
+            }),
+          loadImage(reliefTileUrl(tileZ, tx, ty))
+            .then((img) => rctx.drawImage(img, px, py, tileStep + 0.5, tileStep + 0.5))
+            .catch(() => {})
         );
       }
     }
     await Promise.allSettled(jobs);
 
+    // Recolor to the palette of the original map: teal bathymetric water and
+    // hillshaded, slightly saturated land (skipped if a canvas ends up
+    // tainted, e.g. a tile server stops sending CORS headers).
+    try {
+      const baseImg = bctx.getImageData(0, 0, W, H);
+      const reliefImg = rctx.getImageData(0, 0, W, H);
+      const d = baseImg.data;
+      const rd = reliefImg.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+        if (b > r + 6 && b > 170 && g > 150) {
+          // Water -> the deep teal of the original map (measured 74,132,146).
+          const t = Math.max(0, Math.min(1, ((r + g + b) / 765 - 0.72) / 0.2));
+          d[i] = 54 + 34 * t;
+          d[i + 1] = 104 + 40 * t;
+          d[i + 2] = 118 + 42 * t;
+        } else {
+          // Land -> desaturated warm-gray hillshade (measured 146..217 gray).
+          const shade = 0.35 + (0.65 * rd[i]) / 255;
+          const gray = (r + g + b) / 3;
+          d[i] = Math.min(255, (gray + (r - gray) * 0.45) * shade);
+          d[i + 1] = Math.min(255, (gray + (g - gray) * 0.45) * shade);
+          d[i + 2] = Math.min(255, (gray + (b - gray) * 0.45) * shade);
+        }
+      }
+      bctx.putImageData(baseImg, 0, 0);
+    } catch (err) {
+      // Surface the failure on the map itself instead of failing silently.
+      bctx.fillStyle = '#b00020';
+      bctx.font = `${10 * dpr}px monospace`;
+      bctx.textAlign = 'left';
+      bctx.fillText(`recolor: ${String(err).slice(0, 90)}`, 6 * dpr, H - 8 * dpr);
+    }
+
     bctx.font = `${9 * dpr}px "Space Grotesk", sans-serif`;
     bctx.fillStyle = 'rgba(60, 75, 95, 0.8)';
     bctx.textAlign = 'right';
-    bctx.fillText('© OpenStreetMap · © CARTO', W - 6 * dpr, H - 6 * dpr);
+    bctx.fillStyle = 'rgba(230, 242, 248, 0.78)';
+    bctx.fillText('© OpenStreetMap · © CARTO · © Esri', W - 6 * dpr, H - 6 * dpr);
 
     const placed = markers.map((m) => {
       const p = project(m.lat, m.lon, zoom);
