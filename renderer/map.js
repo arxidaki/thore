@@ -206,15 +206,16 @@
       statusesNow = statusByCode;
       ctx.clearRect(0, 0, W, H);
       ctx.drawImage(base, 0, 0);
-      const r = 11 * dpr;
+      const r = 12 * dpr;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (const m of placed) {
         // Hidden (dead) sensors have no icon: a visible icon means live.
         if (statusByCode[m.code] === 'dead') continue;
         if (highlightCode && m.code === highlightCode) {
-          hexPath(ctx, m.px, m.py, r + 3.5 * dpr);
-          ctx.lineWidth = 2.2 * dpr;
+          // Ring hugs the hexagon edge — its outer stroke lands ~1px out.
+          hexPath(ctx, m.px, m.py, r + 1.4 * dpr);
+          ctx.lineWidth = 1.8 * dpr;
           ctx.strokeStyle = m.accent || '#ffffff';
           ctx.stroke();
         }
