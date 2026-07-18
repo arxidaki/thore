@@ -23,7 +23,6 @@
     ACC: '#f2711c',
     '?': '#6b7688'
   };
-  const STATUS_COLORS = { good: '#7ef3a4', warn: '#ffc857', bad: '#ff6b6b' };
   // Per-station accent: keys each card's edge to its map label (identity is
   // always also carried by the station code text on both ends).
   const STA_ACCENTS = ['#ff9d6b', '#ffd24d', '#9bec6f', '#3fe3a1', '#45d7e8', '#6ea8ff', '#a98bff', '#f07ee0', '#ff6b8a', '#e3d3b2'];
@@ -191,12 +190,12 @@
     // Stretch the graph strips to absorb leftover vertical space: find the
     // largest strip height that still fits (58px when height is the binding
     // constraint, up to STRIP_MAX in tall narrow windows).
+    const localW = winW / z - SHELL_PAD_X;
+    const colW = (localW - (best.c - 1) * COL_GAP) / best.c;
+    const mapItem = ((colW - CARD_CHROME_X) * 2) / 3 + layoutMetrics.mapExtra + CARD_MARGIN;
+    const localH = winH / z - SHELL_PAD_Y;
     let stripH = STRIP_BASE;
     if (!floored) {
-      const localW = winW / z - SHELL_PAD_X;
-      const colW = (localW - (best.c - 1) * COL_GAP) / best.c;
-      const mapItem = ((colW - CARD_CHROME_X) * 2) / 3 + layoutMetrics.mapExtra + CARD_MARGIN;
-      const localH = winH / z - SHELL_PAD_Y;
       const packsAt = (sh) => {
         const extra = 2 * (sh - STRIP_BASE);
         const st = layoutMetrics.stationHeights.map((h) => h + extra + CARD_MARGIN);
@@ -217,6 +216,13 @@
       }
     }
     applyStripHeight(stripH);
+
+    // Place the map card in the slot whose simulated position is closest to
+    // the window center — visually centered, not just middle of the flow.
+    const extraFinal = 2 * (currentStripH - STRIP_BASE);
+    const stationItems = layoutMetrics.stationHeights.map((h) => h + extraFinal + CARD_MARGIN);
+    positionMapCardAt(bestMapSlot(best.c, stationItems, mapItem, colW, localW / 2, localH / 2));
+
     // Real-layout guard in case the CSS balancer packs differently.
     let guard = 0;
     while (currentStripH > STRIP_BASE && document.documentElement.scrollHeight > winH + 1 && guard++ < 12) {
@@ -650,7 +656,6 @@
       accent: (tiles.get(s.code) || {}).accent
     }));
     mapHandle = await window.ThoreMap.render(canvas, BBOX, markers, {
-      statusColors: STATUS_COLORS,
       pixelScale: uiZoom,
       onSelect: (code) => {
         const tile = tiles.get(code);
@@ -875,11 +880,61 @@
     positionMapCard();
   }
 
-  // The map sits mid-flow among VISIBLE cards, landing mid-masonry.
-  function positionMapCard() {
+  // The map card's slot among visible cards; -1 forces the next placement.
+  let lastMapSlot = -1;
+
+  function positionMapCardAt(slot) {
     const mapCard = grid.querySelector('.map-card');
     const visible = [...tiles.values()].filter((t) => !t.hidden).map((t) => t.card);
-    grid.insertBefore(mapCard, visible[Math.floor(visible.length / 2)] || null);
+    const k = Math.max(0, Math.min(visible.length, Math.round(slot)));
+    if (k === lastMapSlot) return;
+    lastMapSlot = k;
+    grid.insertBefore(mapCard, visible[k] || null);
+  }
+
+  // Default placement (used on rebuilds, before the layout engine refines it).
+  function positionMapCard() {
+    lastMapSlot = -1;
+    const visible = [...tiles.values()].filter((t) => !t.hidden);
+    positionMapCardAt(Math.floor(visible.length / 2));
+  }
+
+  /*
+   * Pick the insertion slot that lands the map card's center closest to the
+   * window center, by simulating the CSS column balancer on the same model
+   * the layout engine uses — pure arithmetic, no DOM reflows.
+   */
+  function bestMapSlot(cols, stationItems, mapItem, colW, targetX, targetY) {
+    let bestK = Math.floor(stationItems.length / 2);
+    let bestD = Infinity;
+    for (let k = 0; k <= stationItems.length; k++) {
+      const items = [...stationItems.slice(0, k), mapItem, ...stationItems.slice(k)];
+      const H = packedHeight(items, cols);
+      let col = 0;
+      let y = 0;
+      let mx = 0;
+      let my = 0;
+      for (let idx = 0; idx < items.length; idx++) {
+        const h = items[idx];
+        if (y > 0 && y + h > H + 0.5) {
+          col++;
+          y = 0;
+        }
+        if (idx === k) {
+          mx = (col + 0.5) * (colW + COL_GAP);
+          my = y + h / 2;
+        }
+        y += h;
+      }
+      const dx = mx - targetX;
+      const dy = my - targetY;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestD) {
+        bestD = dist;
+        bestK = k;
+      }
+    }
+    return bestK;
   }
 
   /* Fetch + decode a batch of waveform windows (formerly done in Electron main). */

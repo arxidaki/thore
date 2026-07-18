@@ -56,8 +56,9 @@
   /*
    * Render the map into `canvas`, fitted to `bbox`.
    * markers: [{ code, lat, lon, type, color }]
-   * opts: { onSelect(code), statusColors: {good, warn, bad} }
-   * Returns { redrawMarkers(statusByCode) } — statuses update without refetching tiles.
+   * opts: { onSelect(code), onHover(code), pixelScale }
+   * Returns { redrawMarkers(statusByCode, highlightCode) } — markers redraw
+   * without refetching tiles; a 'dead' status hides that marker entirely.
    */
   async function render(canvas, bbox, markers, opts = {}) {
     // Backing resolution accounts for the app's fit-zoom (opts.pixelScale) so
@@ -198,19 +199,19 @@
       return { ...m, px: p.x - origin.x, py: p.y - origin.y };
     });
 
-    const statusColors = opts.statusColors || { good: '#7ef3a4', warn: '#ffc857', bad: '#ff6b6b' };
     const ctx = canvas.getContext('2d');
+    let statusesNow = {};
 
     function redrawMarkers(statusByCode = {}, highlightCode = null) {
+      statusesNow = statusByCode;
       ctx.clearRect(0, 0, W, H);
       ctx.drawImage(base, 0, 0);
       const r = 11 * dpr;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (const m of placed) {
-        const status = statusByCode[m.code];
-        const ghost = status === 'dead'; // hidden by the liveness sweep
-        ctx.globalAlpha = ghost ? 0.35 : 1;
+        // Hidden (dead) sensors have no icon: a visible icon means live.
+        if (statusByCode[m.code] === 'dead') continue;
         if (highlightCode && m.code === highlightCode) {
           hexPath(ctx, m.px, m.py, r + 3.5 * dpr);
           ctx.lineWidth = 2.2 * dpr;
@@ -228,21 +229,7 @@
         ctx.fillStyle = '#0b0e14';
         ctx.font = `700 ${8 * dpr}px "Space Grotesk", sans-serif`;
         ctx.fillText(m.type, m.px, m.py + 0.5 * dpr);
-
-        // Data-freshness dot pinned to the hexagon corner.
-        if (status) {
-          const sx = m.px + r * 0.75;
-          const sy = m.py - r * 0.75;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 3.2 * dpr, 0, 2 * Math.PI);
-          ctx.fillStyle = statusColors[status] || statusColors.bad;
-          ctx.fill();
-          ctx.lineWidth = 0.6 * dpr;
-          ctx.strokeStyle = '#0b0e14';
-          ctx.stroke();
-        }
       }
-      ctx.globalAlpha = 1;
     }
 
     function markerAt(event, radius) {
@@ -252,6 +239,7 @@
       let best = null;
       let bestDist = radius * dpr;
       for (const m of placed) {
+        if (statusesNow[m.code] === 'dead') continue;
         const d = Math.hypot(m.px - cx, m.py - cy);
         if (d < bestDist) {
           bestDist = d;
