@@ -8,16 +8,51 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+            rust-targets: ''
+            label: Windows x64
+          - platform: windows-latest
+            args: '--target aarch64-pc-windows-msvc'
+            rust-targets: aarch64-pc-windows-msvc
+            label: Windows ARM64
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+            rust-targets: aarch64-apple-darwin
+            label: macOS Apple Silicon
+          - platform: macos-latest
+            args: '--target x86_64-apple-darwin'
+            rust-targets: x86_64-apple-darwin
+            label: macOS Intel
+          - platform: ubuntu-22.04
+            args: ''
+            rust-targets: ''
+            label: Linux x64
+
+    runs-on: ${{ matrix.platform }}
+    name: ${{ matrix.label }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -25,17 +60,13 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
-
-      - name: Stage artifacts
-        shell: pwsh
-        run: |
-          $v = "${{ github.ref_name }}"
-          New-Item -ItemType Directory -Force artifacts | Out-Null
-          Copy-Item src-tauri/target/release/thore.exe "artifacts/thore-$v-windows-x64-portable.exe"
-          Copy-Item src-tauri/target/release/bundle/nsis/*.exe artifacts/
-
-      - uses: softprops/action-gh-release@v2
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: artifacts/*
-          generate_release_notes: true
+          tagName: ${{ github.ref_name }}
+          releaseName: Thore __VERSION__
+          releaseBody: 'Desktop builds for Windows, macOS and Linux are attached below.'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

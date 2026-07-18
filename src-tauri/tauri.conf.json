@@ -23,7 +23,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "dmg", "appimage", "deb"],
     "icon": ["icons/icon.ico", "icons/icon.png"]
   }
 }

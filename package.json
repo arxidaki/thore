@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
+    "build:win-arm64": "tauri build --target aarch64-pc-windows-msvc",
     "tauri": "tauri"
   },
   "devDependencies": {

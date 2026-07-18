@@ -8,12 +8,19 @@ The default region is Cyprus; point it anywhere with one constant.
 
 ## Download
 
-Prebuilt Windows binaries are on the [releases page](https://github.com/arxidaki/thore/releases/latest):
+Prebuilt binaries for Windows, macOS and Linux are attached to every [**release**](https://github.com/arxidaki/thore/releases/latest). Pick the file for your platform:
 
-- `thore-vX.Y.Z-windows-x64-portable.exe` — portable, just run it
-- `Thore_X.Y.Z_x64-setup.exe` — installer
+| Platform | File |
+|----------|------|
+| Windows 10/11 (x64) | `Thore_0.2.0_x64-setup.exe` |
+| Windows 11 (ARM64) | `Thore_0.2.0_arm64-setup.exe` |
+| macOS (Apple Silicon) | `Thore_0.2.0_aarch64.dmg` |
+| macOS (Intel) | `Thore_0.2.0_x64.dmg` |
+| Linux (x64) | `Thore_0.2.0_amd64.AppImage` (portable) or `.deb` |
 
-Both need the WebView2 runtime, which is preinstalled on Windows 10/11. Releases are built automatically by [GitHub Actions](.github/workflows/release.yml) — tagging a commit `vX.Y.Z` and pushing the tag cuts a new one.
+Direct links for the current version: [Windows x64](https://github.com/arxidaki/thore/releases/latest/download/Thore_0.2.0_x64-setup.exe) · [Windows ARM64](https://github.com/arxidaki/thore/releases/latest/download/Thore_0.2.0_arm64-setup.exe) · [macOS Apple Silicon](https://github.com/arxidaki/thore/releases/latest/download/Thore_0.2.0_aarch64.dmg) · [macOS Intel](https://github.com/arxidaki/thore/releases/latest/download/Thore_0.2.0_x64.dmg) · [Linux AppImage](https://github.com/arxidaki/thore/releases/latest/download/Thore_0.2.0_amd64.AppImage)
+
+Windows needs the WebView2 runtime (preinstalled on Windows 10/11); macOS and Linux use the system WebView. Every release is built automatically by [GitHub Actions](.github/workflows/release.yml) across all five targets — pushing a `vX.Y.Z` tag cuts a new one.
 
 ## Features
 
@@ -32,12 +39,12 @@ Prerequisites: [Node.js](https://nodejs.org), [Rust](https://rustup.rs) (stable)
 ```bash
 npm install
 npm run dev     # run in development mode
-npm run build   # portable exe + NSIS installer
+npm run build   # build for the current OS
 ```
 
-Outputs land in `src-tauri/target/release/` (`thore.exe`) and `src-tauri/target/release/bundle/nsis/` (installer). On Windows, `build.cmd` does the same with a double-click.
+`npm run build` produces the package(s) for whatever OS you run it on — NSIS installer + portable `thore.exe` on Windows, `.dmg` on macOS, `.AppImage`/`.deb` on Linux — under `src-tauri/target/release/`. On Windows, `build.cmd` does the same with a double-click.
 
-Developed and tested on Windows; the code has no platform-specific pieces, so Linux/macOS builds should work but are untested.
+Cross-platform binaries can't all be built from one machine (a macOS `.dmg` needs a Mac, etc.), so the full five-target set — Windows x64/ARM64, macOS Intel/Apple Silicon, Linux x64 — is built in CI by [`.github/workflows/release.yml`](.github/workflows/release.yml) on every version tag. Building the Windows ARM64 installer locally additionally needs the "MSVC ARM64 build tools" Visual Studio component (`npm run build:win-arm64`).
 
 ## Configure the region
 
