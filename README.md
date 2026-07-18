@@ -4,7 +4,7 @@ Live seismic dashboard for the [Raspberry Shake](https://raspberryshake.org) cit
 
 The default region is Cyprus; point it anywhere with one constant.
 
-![Thore dashboard](docs/screenshot.png)
+![Thore dashboard](docs/demo.gif)
 
 ## Download
 
