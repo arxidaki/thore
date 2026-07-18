@@ -166,7 +166,12 @@
           // range — shadows (130,126,122) to lit flats (214,212,209) —
           // or the terrain reads flat. Ocean Base's land colors are
           // ignored entirely: no roads, no river tints.
-          const rn = Math.max(0, Math.min(1, (rr - 186) / 55));
+          // Where the two sources' coastlines disagree, the relief pixel is
+          // partly its blue sea — that value stretched to "deep shadow" and
+          // drew a dark rim around the island. Render such shoreline pixels
+          // as low-lying light ground instead.
+          const shoreline = rb > rr + 8;
+          const rn = shoreline ? 0.78 : Math.max(0, Math.min(1, (rr - 186) / 55));
           const v = 122 + 102 * rn;
           d[i] = v + 4;
           d[i + 1] = v;
