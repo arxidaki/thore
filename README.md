@@ -68,7 +68,7 @@ Architecture, in one paragraph: `renderer/miniseed.js` decodes miniSEED; `render
 
 - Waveforms and metadata come from the **Raspberry Shake** community network (FDSN services at `data.raspberryshake.org`). Live streaming uses the CAPS WebSocket endpoint that Raspberry Shake's public StationView web app runs on, including the client credentials StationView ships to every visitor's browser. **That endpoint is undocumented and may change or disappear without notice** — Thore degrades to FDSN polling automatically if it does. Note the FDSN archive itself trails real time by roughly 30 minutes.
 - One WebSocket carries all stations, polling is incremental, and map tiles are fetched once per session — please keep it that way; these are free community services.
-- Basemap tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, served by Raspberry Shake's map server (CARTO as fallback).
+- Basemap tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © [CARTO](https://carto.com/attributions) (label-free style).
 - This project is **not affiliated with Raspberry Shake S.A.** It is a personal dashboard for openly shared citizen-science data. Don't use it for safety-critical decisions.
 
 ## License

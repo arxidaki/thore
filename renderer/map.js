@@ -1,4 +1,4 @@
-/* Static slippy-tile map with station markers (CARTO dark basemap, no map library). */
+/* Static slippy-tile map with station markers (label-free CARTO basemap, no map library). */
 (() => {
   'use strict';
 
@@ -15,13 +15,15 @@
   }
 
   function tileUrl(z, x, y) {
-    // StationView's own tile server — the original map, hillshade and all.
-    return `https://mapserver.raspberryshake.org/tiles/${z}/${x}/${y}.png`;
+    // CARTO voyager with the label layer removed: clean geography, zero text
+    // (retina tiles, drawn at half size for extra sharpness).
+    const sub = SUBDOMAINS[Math.abs(x + y) % SUBDOMAINS.length];
+    return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/${z}/${x}/${y}@2x.png`;
   }
 
   function fallbackTileUrl(z, x, y) {
     const sub = SUBDOMAINS[Math.abs(x + y) % SUBDOMAINS.length];
-    return `https://${sub}.basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`;
+    return `https://${sub}.basemaps.cartocdn.com/light_nolabels/${z}/${x}/${y}.png`;
   }
 
   function loadImage(url) {
@@ -52,7 +54,10 @@
    * Returns { redrawMarkers(statusByCode) } — statuses update without refetching tiles.
    */
   async function render(canvas, bbox, markers, opts = {}) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Backing resolution accounts for the app's fit-zoom (opts.pixelScale) so
+    // the map maps 1:1 to device pixels instead of being CSS-upscaled blurry.
+    const scale = (window.devicePixelRatio || 1) * (opts.pixelScale || 1);
+    const dpr = Math.min(Math.max(scale, 1), 2.5);
     const cssW = canvas.clientWidth || 400;
     const cssH = canvas.clientHeight || 300;
     const W = Math.round(cssW * dpr);
@@ -60,42 +65,21 @@
     canvas.width = W;
     canvas.height = H;
 
-    // Frame the stations themselves (padded), not the whole search bbox —
-    // on small canvases the bbox wastes most of the panel.
-    let ext = bbox;
-    if (markers.length) {
-      let minLat = Infinity;
-      let maxLat = -Infinity;
-      let minLon = Infinity;
-      let maxLon = -Infinity;
-      for (const m of markers) {
-        if (m.lat < minLat) minLat = m.lat;
-        if (m.lat > maxLat) maxLat = m.lat;
-        if (m.lon < minLon) minLon = m.lon;
-        if (m.lon > maxLon) maxLon = m.lon;
-      }
-      const padLat = Math.max(0.1, (maxLat - minLat) * 0.3);
-      const padLon = Math.max(0.15, (maxLon - minLon) * 0.2);
-      // Extra room below for the station code labels.
-      ext = {
-        minLat: minLat - padLat - 0.08,
-        maxLat: maxLat + padLat,
-        minLon: minLon - padLon,
-        maxLon: maxLon + padLon
-      };
-    }
+    // Frame the whole configured region — the island always shows in full.
+    const ext = bbox;
 
-    // Largest zoom at which the extent fits with padding.
+    // Fractional zoom fills the canvas exactly (an integer-zoom fit can leave
+    // ~40% margin). Tiles are fetched one level finer and drawn downscaled.
     const pad = 8 * dpr;
-    let zoom = 4;
-    for (let z = 12; z >= 4; z--) {
-      const p1 = project(ext.maxLat, ext.minLon, z);
-      const p2 = project(ext.minLat, ext.maxLon, z);
-      if (p2.x - p1.x <= W - 2 * pad && p2.y - p1.y <= H - 2 * pad) {
-        zoom = z;
-        break;
-      }
-    }
+    const z0a = project(ext.maxLat, ext.minLon, 0);
+    const z0b = project(ext.minLat, ext.maxLon, 0);
+    const zoom = Math.min(
+      Math.log2((W - 2 * pad) / (z0b.x - z0a.x)),
+      Math.log2((H - 2 * pad) / (z0b.y - z0a.y)),
+      12
+    );
+    const tileZ = Math.max(4, Math.min(12, Math.ceil(zoom)));
+    const tileStep = TILE * Math.pow(2, zoom - tileZ); // on-canvas size of one tile
 
     const a = project(ext.maxLat, ext.minLon, zoom);
     const b = project(ext.minLat, ext.maxLon, zoom);
@@ -109,25 +93,26 @@
     base.width = W;
     base.height = H;
     const bctx = base.getContext('2d');
-    bctx.fillStyle = '#79b4c2';
+    bctx.fillStyle = '#d4dadc';
     bctx.fillRect(0, 0, W, H);
 
-    const x0 = Math.floor(origin.x / TILE);
-    const x1 = Math.floor((origin.x + W) / TILE);
-    const y0 = Math.floor(origin.y / TILE);
-    const y1 = Math.floor((origin.y + H) / TILE);
+    const x0 = Math.floor(origin.x / tileStep);
+    const x1 = Math.floor((origin.x + W) / tileStep);
+    const y0 = Math.floor(origin.y / tileStep);
+    const y1 = Math.floor((origin.y + H) / tileStep);
     const jobs = [];
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
-        const px = tx * TILE - origin.x;
-        const py = ty * TILE - origin.y;
+        const px = tx * tileStep - origin.x;
+        const py = ty * tileStep - origin.y;
         jobs.push(
-          loadImage(tileUrl(zoom, tx, ty))
-            .catch(() => loadImage(fallbackTileUrl(zoom, tx, ty)))
-            .then((img) => bctx.drawImage(img, px, py, TILE, TILE))
+          loadImage(tileUrl(tileZ, tx, ty))
+            .catch(() => loadImage(fallbackTileUrl(tileZ, tx, ty)))
+            // +0.5px overlap hides hairline seams from fractional scaling.
+            .then((img) => bctx.drawImage(img, px, py, tileStep + 0.5, tileStep + 0.5))
             .catch(() => {
-              bctx.fillStyle = '#6da9b8';
-              bctx.fillRect(px, py, TILE, TILE);
+              bctx.fillStyle = '#cfd6da';
+              bctx.fillRect(px, py, tileStep + 0.5, tileStep + 0.5);
             })
         );
       }
@@ -137,7 +122,7 @@
     bctx.font = `${9 * dpr}px "Space Grotesk", sans-serif`;
     bctx.fillStyle = 'rgba(60, 75, 95, 0.8)';
     bctx.textAlign = 'right';
-    bctx.fillText('© OpenStreetMap · © Raspberry Shake', W - 6 * dpr, H - 6 * dpr);
+    bctx.fillText('© OpenStreetMap · © CARTO', W - 6 * dpr, H - 6 * dpr);
 
     const placed = markers.map((m) => {
       const p = project(m.lat, m.lon, zoom);

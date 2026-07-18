@@ -650,6 +650,7 @@
     }));
     mapHandle = await window.ThoreMap.render(canvas, BBOX, markers, {
       statusColors: STATUS_COLORS,
+      pixelScale: uiZoom,
       onSelect: (code) => {
         const tile = tiles.get(code);
         if (!tile) return;
